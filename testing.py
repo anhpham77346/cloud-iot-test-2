@@ -3,9 +3,11 @@ import librosa
 import numpy as np
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
+from flask_cors import CORS  # Import thư viện flask-cors
 import wave
 
 app = Flask(__name__)
+CORS(app)  # Kích hoạt CORS cho toàn bộ ứng dụng
 
 # Hàm để trích xuất MFCC từ file WAV
 def extract_features(file_path, n_mfcc=13):
