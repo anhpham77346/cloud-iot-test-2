@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
 from flask_cors import CORS  # Import thư viện flask-cors
 import wave
+import requests
 
 app = Flask(__name__)
 CORS(app)  # Kích hoạt CORS cho toàn bộ ứng dụng
@@ -36,6 +37,19 @@ def predict_speaker_or_unknown(file_path, threshold=0.7):
         return "Người lạ"
     else:
         return "Người đã biết"
+    
+def post_to_esp32(transcript):
+    url = 'http://192.168.31.239/post-authen'
+    headers = {
+        'Content-Type': 'text/plain',
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=transcript)
+        response.raise_for_status()  # Kiểm tra lỗi HTTP
+        print('Response from ESP32 (text):', response.text)
+    except requests.exceptions.RequestException as error:
+        print('Error:', error)
 
 # Route để nhận file WAV và trả về kết quả dự đoán
 @app.route('/predict', methods=['POST'])
@@ -53,6 +67,12 @@ def predict():
     file_path = os.path.join("data", "received.wav")
     file.save(file_path)
     result = predict_speaker_or_unknown(file_path)
+
+    if (result == "Người đã biết"):
+        post_to_esp32("AUTHEN_SUCCESS")
+    else:
+        post_to_esp32("AUTHEN_FAILED")
+
     return jsonify({'result': result})
 
 @app.route('/upload-audio', methods=['POST'])
